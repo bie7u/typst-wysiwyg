@@ -14,6 +14,46 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
+// Simple in-memory rate limiter (no external dependency required)
+// Limits each IP to RATE_LIMIT_MAX export requests per RATE_LIMIT_WINDOW ms.
+// ---------------------------------------------------------------------------
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX    = 15;        // requests per window per IP
+
+const rateLimitStore = new Map(); // ip -> { count, resetAt }
+
+function rateLimit(req, res, next) {
+  const ip  = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+  const now = Date.now();
+
+  let record = rateLimitStore.get(ip);
+  if (!record || now >= record.resetAt) {
+    record = { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+    rateLimitStore.set(ip, record);
+  }
+
+  record.count += 1;
+
+  if (record.count > RATE_LIMIT_MAX) {
+    const retryAfter = Math.ceil((record.resetAt - now) / 1000);
+    res.setHeader('Retry-After', retryAfter);
+    return res.status(429).json({
+      error: `Zbyt wiele żądań. Spróbuj ponownie za ${retryAfter} sekund.`,
+    });
+  }
+
+  next();
+}
+
+// Periodically purge expired entries to avoid memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitStore) {
+    if (now >= record.resetAt) rateLimitStore.delete(ip);
+  }
+}, RATE_LIMIT_WINDOW);
+
+// ---------------------------------------------------------------------------
 // Check whether the `typst` binary is available on PATH
 // ---------------------------------------------------------------------------
 function isTypstAvailable() {
@@ -27,7 +67,7 @@ function isTypstAvailable() {
 // Body: { content: "<typst source>", images: { "<placeholder>": "<base64>" } }
 // Returns: application/pdf  –or–  JSON error
 // ---------------------------------------------------------------------------
-app.post('/export', async (req, res) => {
+app.post('/export', rateLimit, async (req, res) => {
   const { content, images = {} } = req.body;
 
   if (!content || !content.trim()) {
