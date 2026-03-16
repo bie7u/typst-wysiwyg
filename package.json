@@ -1,0 +1,14 @@
+{
+  "name": "typst-wysiwyg",
+  "version": "1.0.0",
+  "description": "WYSIWYG text editor with Typst PDF export",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["typst", "wysiwyg", "editor", "pdf"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

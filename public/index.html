@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typst WYSIWYG Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════════════ APP SHELL ═══════════════════ -->
+<div id="app">
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <div class="header-brand">
+      <span class="logo">✏️</span>
+      <span class="brand-name">Typst WYSIWYG Editor</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="btn-html-view" title="Widok HTML / kodu">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6z"/></svg>
+        <span>HTML</span>
+      </button>
+      <button class="btn-primary" id="btn-export" title="Eksportuj do PDF">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm4 18H6V4h7v5h5zM8 14h8v2H8zm0 4h5v2H8zm0-8h2v2H8z"/></svg>
+        <span>Eksportuj PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Toolbar ── -->
+  <div id="toolbar">
+
+    <!-- Row 1 -->
+    <div class="tb-row">
+
+      <!-- History -->
+      <div class="tb-group">
+        <button class="tb-btn" data-command="undo" title="Cofnij (Ctrl+Z)">
+          <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8"/></svg>
+        </button>
+        <button class="tb-btn" data-command="redo" title="Ponów (Ctrl+Y)">
+          <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7z"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Basic formatting -->
+      <div class="tb-group">
+        <button class="tb-btn fmt-bold"   data-command="bold"          title="Pogrubienie (Ctrl+B)"><b>B</b></button>
+        <button class="tb-btn fmt-italic" data-command="italic"        title="Kursywa (Ctrl+I)"><i>I</i></button>
+        <button class="tb-btn fmt-ul"     data-command="underline"     title="Podkreślenie (Ctrl+U)"><u>U</u></button>
+        <button class="tb-btn fmt-strike" data-command="strikeThrough" title="Przekreślenie"><s>S</s></button>
+        <button class="tb-btn" data-command="superscript" title="Indeks górny">x<sup>2</sup></button>
+        <button class="tb-btn" data-command="subscript"  title="Indeks dolny">x<sub>2</sub></button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Font family & size -->
+      <div class="tb-group">
+        <select id="font-family" title="Czcionka">
+          <option value="">Czcionka</option>
+          <option value="Arial">Arial</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Impact">Impact</option>
+          <option value="Comic Sans MS">Comic Sans</option>
+        </select>
+        <select id="font-size" title="Rozmiar czcionki">
+          <option value="">Rozmiar</option>
+          <option value="10px">8 pt</option>
+          <option value="11px">9 pt</option>
+          <option value="13px">10 pt</option>
+          <option value="15px">11 pt</option>
+          <option value="16px">12 pt</option>
+          <option value="19px">14 pt</option>
+          <option value="21px">16 pt</option>
+          <option value="24px">18 pt</option>
+          <option value="29px">22 pt</option>
+          <option value="32px">24 pt</option>
+          <option value="48px">36 pt</option>
+          <option value="64px">48 pt</option>
+        </select>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Colors -->
+      <div class="tb-group">
+        <label class="tb-btn color-picker-wrap" title="Kolor tekstu">
+          <span class="color-icon text-color-icon">A</span>
+          <span class="color-bar" id="text-color-bar"></span>
+          <input type="color" id="text-color" value="#000000">
+        </label>
+        <label class="tb-btn color-picker-wrap" title="Kolor tła / podświetlenie">
+          <span class="color-icon bg-color-icon">A</span>
+          <span class="color-bar" id="bg-color-bar"></span>
+          <input type="color" id="bg-color" value="#ffff00">
+        </label>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Clear format -->
+      <div class="tb-group">
+        <button class="tb-btn" id="btn-clear-format" title="Usuń formatowanie">
+          <svg viewBox="0 0 24 24"><path d="M6 5v.18L8.82 8h2.4l-.72 1.68 2.1 2.1L14.21 8H20V5H6zm14 14.59L17.41 17l-3.12-3.12-.56 1.34-1.47 3.43-2-2 2.93-6.86L4.41 2 3 3.41l17 17 .03-.03-.03.21z"/></svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Row 2 -->
+    <div class="tb-row">
+
+      <!-- Alignment -->
+      <div class="tb-group">
+        <button class="tb-btn" data-command="justifyLeft"   title="Wyrównaj do lewej">
+          <svg viewBox="0 0 24 24"><path d="M15 15H3v2h12zm0-8H3v2h12zM3 13h18v-2H3zm0 8h18v-2H3zM3 3v2h18V3z"/></svg>
+        </button>
+        <button class="tb-btn" data-command="justifyCenter" title="Wyśrodkuj">
+          <svg viewBox="0 0 24 24"><path d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/></svg>
+        </button>
+        <button class="tb-btn" data-command="justifyRight"  title="Wyrównaj do prawej">
+          <svg viewBox="0 0 24 24"><path d="M3 21h18v-2H3v2zm6-4h12v-2H9v2zm-6-4h18v-2H3v2zm6-4h12V7H9v2zM3 3v2h18V3H3z"/></svg>
+        </button>
+        <button class="tb-btn" data-command="justifyFull"   title="Wyjustuj">
+          <svg viewBox="0 0 24 24"><path d="M3 21h18v-2H3v2zm0-4h18v-2H3v2zm0-4h18v-2H3v2zm0-4h18V7H3v2zm0-6v2h18V3H3z"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Indent -->
+      <div class="tb-group">
+        <button class="tb-btn" data-command="outdent" title="Zmniejsz wcięcie">
+          <svg viewBox="0 0 24 24"><path d="M11 17h10v-2H11zm-8-5 4 4V8zm0 9h18v-2H3zm0-4h8v-2H3zm0-4h8V11H3zm0-4h18V5H3z"/></svg>
+        </button>
+        <button class="tb-btn" data-command="indent" title="Zwiększ wcięcie">
+          <svg viewBox="0 0 24 24"><path d="M3 21h18v-2H3zm4-4h14v-2H7zm-4-4 4-4-4-4v8zm4-2h14v-2H7zm-4-6v2h18V5H3z"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Line height -->
+      <div class="tb-group">
+        <select id="line-height" title="Interlinia">
+          <option value="">↕ Interlinia</option>
+          <option value="1">1.0</option>
+          <option value="1.15">1.15</option>
+          <option value="1.5">1.5</option>
+          <option value="2">2.0</option>
+          <option value="2.5">2.5</option>
+        </select>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Lists -->
+      <div class="tb-group">
+        <button class="tb-btn" data-command="insertUnorderedList" title="Lista punktowana">
+          <svg viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7zm0-6h14v-2H7zm0-8v2h14V5H7z"/></svg>
+        </button>
+        <button class="tb-btn" data-command="insertOrderedList" title="Lista numerowana">
+          <svg viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2zm1-9h1V4H2v1h1zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2zm5-5v2h14V6zm0 6h14v-2H7zm0 6h14v-2H7z"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-tasklist" title="Lista zadań (checkbox)">
+          <svg viewBox="0 0 24 24"><path d="M22 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2v-2h-2V9h2zm-4 10H4V5h14v14zM6 13h5v-2H6zm0-3h5V8H6zm0 6h8v-2H6z"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Headings -->
+      <div class="tb-group">
+        <button class="tb-btn tb-h" id="btn-h1" title="Nagłówek 1"><b>H1</b></button>
+        <button class="tb-btn tb-h" id="btn-h2" title="Nagłówek 2"><b>H2</b></button>
+        <button class="tb-btn tb-h" id="btn-h3" title="Nagłówek 3"><b>H3</b></button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Blocks -->
+      <div class="tb-group">
+        <button class="tb-btn" id="btn-blockquote" title="Cytat (blockquote)">
+          <svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-codeblock" title="Blok kodu">
+          <svg viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6z"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+
+      <!-- Inserts -->
+      <div class="tb-group">
+        <button class="tb-btn" id="btn-link" title="Wstaw link (hiperłącze)">
+          <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-image" title="Wstaw obrazek">
+          <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5z"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-table" title="Wstaw tabelę">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-9 15H4v-3h7v3zm0-5H4v-3h7v3zm0-5H4V4h7v3zm9 10h-7v-3h7v3zm0-5h-7v-3h7v3zm0-5h-7V4h7v3z"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-emoji" title="Wstaw emoji / symbol">😊</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Main Area ── -->
+  <div id="main">
+    <div id="editor-pane">
+      <div id="editor" contenteditable="true" spellcheck="true"><h1>Mój dokument</h1><p>Witaj w edytorze <strong>Typst WYSIWYG</strong>! Zacznij pisać tutaj i używaj paska narzędzi, aby formatować tekst.</p><p>Po zakończeniu kliknij <em>Eksportuj PDF</em> — dokument zostanie skompilowany przez <strong>Typst</strong> i pobrany.</p></div>
+    </div>
+    <div id="panel-divider" title="Przeciągnij aby zmienić szerokość"></div>
+    <div id="typst-pane">
+      <div id="typst-pane-header">
+        <span>Źródło Typst</span>
+        <button id="btn-copy-typst" title="Kopiuj kod Typst">Kopiuj</button>
+      </div>
+      <pre id="typst-source"></pre>
+    </div>
+  </div>
+
+  <!-- ── Status Bar ── -->
+  <div id="statusbar">
+    <span id="word-count">Słowa: 0</span>
+    <span class="sep">|</span>
+    <span id="char-count">Znaki: 0</span>
+    <span class="flex-spacer"></span>
+    <span id="status-msg"></span>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- ═══════════════════ DIALOGS ═══════════════════ -->
+
+<!-- Overlay -->
+<div id="overlay" class="hidden"></div>
+
+<!-- Link dialog -->
+<div id="dialog-link" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="dlg-link-title">
+  <div class="dialog-content">
+    <h3 id="dlg-link-title">🔗 Wstaw link</h3>
+    <label>Tekst linku
+      <input type="text" id="link-text" placeholder="Kliknij tutaj">
+    </label>
+    <label>Adres URL
+      <input type="url" id="link-url" placeholder="https://example.com">
+    </label>
+    <div class="dialog-buttons">
+      <button class="btn-primary" id="dlg-link-ok">Wstaw</button>
+      <button class="btn-cancel" id="dlg-link-cancel">Anuluj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image dialog -->
+<div id="dialog-image" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="dlg-img-title">
+  <div class="dialog-content">
+    <h3 id="dlg-img-title">🖼 Wstaw obrazek</h3>
+    <label>Adres URL obrazka
+      <input type="url" id="image-url" placeholder="https://example.com/obraz.png">
+    </label>
+    <div class="or-divider">— lub —</div>
+    <label>Prześlij plik
+      <input type="file" id="image-file" accept="image/*">
+    </label>
+    <label>Opis (alt text)
+      <input type="text" id="image-alt" placeholder="Opis obrazka">
+    </label>
+    <div class="dialog-buttons">
+      <button class="btn-primary" id="dlg-image-ok">Wstaw</button>
+      <button class="btn-cancel" id="dlg-image-cancel">Anuluj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Table dialog -->
+<div id="dialog-table" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="dlg-tbl-title">
+  <div class="dialog-content">
+    <h3 id="dlg-tbl-title">⊞ Wstaw tabelę</h3>
+    <label>Wiersze
+      <input type="number" id="table-rows" value="3" min="1" max="30">
+    </label>
+    <label>Kolumny
+      <input type="number" id="table-cols" value="3" min="1" max="15">
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="table-header" checked>
+      Wiersz nagłówkowy
+    </label>
+    <div class="dialog-buttons">
+      <button class="btn-primary" id="dlg-table-ok">Wstaw</button>
+      <button class="btn-cancel" id="dlg-table-cancel">Anuluj</button>
+    </div>
+  </div>
+</div>
+
+<!-- HTML view dialog -->
+<div id="dialog-html" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="dlg-html-title">
+  <div class="dialog-content wide">
+    <h3 id="dlg-html-title">&lt;/&gt; Widok HTML</h3>
+    <textarea id="html-source" rows="18" spellcheck="false"></textarea>
+    <div class="dialog-buttons">
+      <button class="btn-primary" id="dlg-html-apply">Zastosuj zmiany</button>
+      <button class="btn-cancel"  id="dlg-html-close">Zamknij</button>
+    </div>
+  </div>
+</div>
+
+<!-- Emoji picker -->
+<div id="emoji-picker" class="hidden" role="dialog" aria-label="Wybierz emoji">
+  <div id="emoji-grid"></div>
+</div>
+
+<!-- Export result toast -->
+<div id="toast" class="hidden"></div>
+
+<script src="editor.js"></script>
+</body>
+</html>
