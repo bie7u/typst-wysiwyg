@@ -110,6 +110,20 @@
         const c = this.cssColorToTypst(s.color);
         if (c) result = `#text(fill: ${c})[${result}]`;
       }
+      // bold — styleWithCSS produces span[style="font-weight:bold"] or "700"
+      if (s.fontWeight === 'bold' || parseInt(s.fontWeight) >= 700) {
+        result = `*${result}*`;
+      }
+      // italic — styleWithCSS produces span[style="font-style:italic"]
+      if (s.fontStyle === 'italic') {
+        result = `_${result}_`;
+      }
+      // underline / strikethrough — styleWithCSS puts these in text-decoration.
+      // Applied outermost last: bold → italic → underline → strikethrough.
+      const td = s.textDecoration || s.textDecorationLine || '';
+      if (td.includes('underline'))    result = `#underline[${result}]`;
+      if (td.includes('line-through')) result = `#strike[${result}]`;
+
       return result;
     },
 
