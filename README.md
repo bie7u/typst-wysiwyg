@@ -1,6 +1,6 @@
 # ✏️ Typst WYSIWYG Editor
 
-Przeglądarkowy edytor tekstu z pełnym paskiem formatowania, który w czasie rzeczywistym tłumaczy treść na język znaczników [Typst](https://typst.app/) i eksportuje gotowy dokument do **PDF** za pomocą lokalnego kompilatora `typst`.
+Przeglądarkowy edytor tekstu z pełnym paskiem formatowania, który w czasie rzeczywistym tłumaczy treść na język znaczników [Typst](https://typst.app/) i eksportuje gotowy dokument do **PDF** za pomocą biblioteki Python [typst-py](https://github.com/messense/typst-py) — bez potrzeby instalowania osobnego programu `typst`.
 
 ---
 
@@ -29,32 +29,41 @@ Przeglądarkowy edytor tekstu z pełnym paskiem formatowania, który w czasie rz
 
 | Wymaganie | Wersja | Uwagi |
 |-----------|--------|-------|
-| [Node.js](https://nodejs.org/) | ≥ 18 | wymagane |
-| [npm](https://www.npmjs.com/) | ≥ 9 | wymagane |
-| [Typst](https://typst.app/) | dowolna | opcjonalne — potrzebne tylko do eksportu PDF |
+| [Python](https://www.python.org/) | ≥ 3.11 | wymagane |
+| [pip](https://pip.pypa.io/) | dowolna | wymagane |
+| [Django](https://www.djangoproject.com/) | ≥ 5.1 | instalowane automatycznie przez `requirements.txt` |
+| [typst-py](https://github.com/messense/typst-py) | ≥ 0.14 | instalowane automatycznie; wbudowany kompilator Typst — **brak potrzeby instalowania `typst` z zewnątrz** |
 
-Jeśli `typst` nie jest zainstalowany, edytor nadal działa w pełni — przy eksporcie wyświetli komunikat i skopiuje wygenerowany kod `.typ` do schowka, który można wkleić na [typst.app](https://typst.app/).
+> **Uwaga:** Nie trzeba instalować programu `typst` — biblioteka `typst-py` zawiera wbudowany kompilator Typst jako rozszerzenie Pythona.
 
 ---
 
 ## Szybki start
 
 ```bash
-# 1. Zainstaluj zależności Node.js
-npm install
+# 1. Zainstaluj zależności Pythona
+pip install -r requirements.txt
 
-# 2. Uruchom serwer
-npm start
+# 2. Uruchom serwer Django (tryb deweloperski)
+DEBUG=True python manage.py runserver
 
 # 3. Otwórz w przeglądarce
-# http://localhost:3000
+# http://localhost:8000
 ```
 
-Port można zmienić zmienną środowiskową:
+Port można zmienić podając go wprost:
 
 ```bash
-PORT=8080 npm start
+DEBUG=True python manage.py runserver 0.0.0.0:3000
 ```
+
+Zmienne środowiskowe:
+
+| Zmienna | Domyślna wartość | Opis |
+|---------|-----------------|------|
+| `DJANGO_SECRET_KEY` | *(wartość dev)* | Klucz tajny Django — **zmień w produkcji** |
+| `DEBUG` | `True` | Ustaw `False` w produkcji |
+| `ALLOWED_HOSTS` | `*` | Lista dozwolonych hostów (przecinkami) |
 
 ---
 
@@ -62,12 +71,20 @@ PORT=8080 npm start
 
 ```
 typst-wysiwyg/
-├── package.json        ← metadane projektu, zależność: express
-├── server.js           ← serwer Express: statyczne pliki + endpoint /export
-└── public/
-    ├── index.html      ← szkielet UI: nagłówek, pasek narzędzi, panel edytora, dialogi
-    ├── style.css       ← style (zmienne CSS, podział paneli, motywy)
-    └── editor.js       ← cała logika przeglądarki + konwerter HTML→Typst
+├── requirements.txt    ← zależności Pythona (Django + typst-py)
+├── manage.py           ← narzędzie Django CLI
+├── typst_editor/       ← pakiet konfiguracyjny Django
+│   ├── settings.py     ← ustawienia (SECRET_KEY, DEBUG, ALLOWED_HOSTS…)
+│   ├── urls.py         ← routing URL: /export + catch-all dla public/
+│   └── wsgi.py         ← punkt wejścia WSGI (Gunicorn, uWSGI…)
+├── editor/             ← aplikacja Django
+│   └── views.py        ← serve_static() + export_pdf() z typst-py
+├── public/             ← pliki frontendowe (bez zmian)
+│   ├── index.html      ← szkielet UI: nagłówek, pasek narzędzi, dialogi
+│   ├── style.css       ← style (zmienne CSS, podział paneli, motywy)
+│   └── editor.js       ← cała logika przeglądarki + konwerter HTML→Typst
+├── server.js           ← (legacy) stary serwer Express/Node.js
+└── package.json        ← (legacy) metadane npm
 ```
 
 ---
@@ -77,23 +94,24 @@ typst-wysiwyg/
 ### Krok 1 — Uruchomienie serwera
 
 ```
-npm start
-  └─► node server.js
-        └─► Express nasłuchuje na porcie 3000
-              ├─► app.use(express.static('public'))  ← serwuje pliki HTML/CSS/JS
-              └─► app.post('/export', rateLimit, handler)  ← endpoint PDF
+python manage.py runserver
+  └─► Django nasłuchuje na porcie 8000
+        ├─► GET  /          → serve_static() → public/index.html
+        ├─► GET  /style.css → serve_static() → public/style.css
+        ├─► GET  /editor.js → serve_static() → public/editor.js
+        └─► POST /export    → export_pdf()   ← kompilacja Typst → PDF
 ```
 
-`server.js` uruchamia aplikację Express, która:
+`manage.py runserver` uruchamia wbudowany serwer deweloperski Django, który:
 
-- Serwuje katalog `public/` jako statyczne pliki (przeglądarka pobiera `index.html`, `style.css`, `editor.js`).
-- Rejestruje jeden endpoint API: `POST /export`, który przyjmuje treść dokumentu i zwraca plik PDF.
+- Dla żądań `GET /` i zasobów statycznych (CSS, JS) wywołuje `serve_static()` — bezpieczny serwer plików z ochroną przed path traversal.
+- Dla żądań `POST /export` wywołuje `export_pdf()` — konwertuje treść edytora na PDF przy użyciu biblioteki **typst-py**.
 
 ---
 
 ### Krok 2 — Przeglądarka otwiera edytor
 
-Po wejściu na `http://localhost:3000` przeglądarka pobiera `index.html`. Strona ładuje `style.css` i `editor.js`, a następnie:
+Po wejściu na `http://localhost:8000` przeglądarka pobiera `index.html`. Strona ładuje `style.css` i `editor.js`, a następnie:
 
 1. `editor.js` uruchamia się w trybie IIFE (`(function () { ... }())`), żeby nie zaśmiecać przestrzeni globalnej.
 2. Wywołuje `document.execCommand('styleWithCSS', false, true)` — sprawia to, że polecenia formatowania (`bold`, `italic` itd.) zapisują formatowanie jako styl CSS (`style="font-weight:bold"`) zamiast starych tagów `<b>`, co ułatwia późniejszą konwersję.
@@ -280,7 +298,7 @@ Preambuła ustawia format strony A4, język, rozmiar tekstu i styl nagłówków.
 Po kliknięciu **„Eksportuj PDF"** (lub `Ctrl+S`):
 
 ```
-Przeglądarka                          Serwer (server.js)
+Przeglądarka                          Serwer Django (editor/views.py)
 ─────────────────────────────────     ──────────────────────────────────────
 exportToPDF()
   ├─► TypstConverter.convert(...)     
@@ -289,29 +307,25 @@ exportToPDF()
         content: "<kod Typst>",
         images: { "img-xxx": "data:image/png;base64,..." }
       })
-                                 ──►  rateLimit()  ← sprawdź limit żądań
-                                      isTypstAvailable()  ← typst --version
-                                      
-                                      id = crypto.randomBytes(8).hex()
-                                      tmpDir = os.tmpdir()
-                                      
-                                      [dla każdego obrazka]
-                                        dekoduj base64 → plik /tmp/img-{id}-N.png
-                                        zastąp placeholder ścieżką w kodzie .typ
-                                      
-                                      zapisz kod do /tmp/typst-{id}.typ
-                                      
-                                      execFile('typst', ['compile',
-                                        '/tmp/typst-{id}.typ',
-                                        '/tmp/typst-{id}.pdf'
-                                      ], timeout: 30s)
-                                      
-                                      usuń /tmp/typst-{id}.typ
-                                      usuń pliki obrazków
-                                      
-                                      res.setHeader('Content-Type', 'application/pdf')
-                                      stream /tmp/typst-{id}.pdf → res
-                                      po finish → usuń /tmp/typst-{id}.pdf
+                                 ──►  _check_rate_limit(ip)  ← limit żądań
+
+                                       [bez obrazków]
+                                         typst.compile(content.encode())
+                                         → pdf_bytes (w pamięci, bez plików)
+
+                                       [z obrazkami]
+                                         uid = secrets.token_hex(8)
+                                         dla każdego obrazka:
+                                           dekoduj base64 → /tmp/img-{uid}-N.ext
+                                           zastąp placeholder pełną ścieżką
+                                         zapisz kod → /tmp/typst-{uid}.typ
+                                         typst.compile('/tmp/typst-{uid}.typ',
+                                                       root='/')
+                                         → pdf_bytes
+                                         usuń pliki tymczasowe (finally)
+
+                                       return HttpResponse(pdf_bytes,
+                                         content_type='application/pdf')
   ◄──
   blob = await resp.blob()
   URL.createObjectURL(blob)
@@ -320,7 +334,11 @@ exportToPDF()
   showToast('✅ PDF został pobrany!')
 ```
 
-Pliki tymczasowe zawsze są sprzątane — zarówno przy sukcesie jak i przy błędzie — w bloku `catch` lub w callbacku `execFile`.
+**Kluczowa różnica wobec poprzedniego serwera Node.js:** biblioteka `typst-py` kompiluje Typst bezpośrednio w procesie Pythona — nie uruchamia zewnętrznego procesu `typst`. Oznacza to, że:
+
+- Nie trzeba instalować programu `typst` na serwerze.
+- Dla dokumentów bez obrazków kompilacja odbywa się **całkowicie w pamięci** (brak I/O na dysk).
+- Pliki tymczasowe są tworzone **tylko wtedy**, gdy dokument zawiera osadzone obrazki (base64), i są zawsze usuwane w bloku `finally`.
 
 ---
 
@@ -328,49 +346,46 @@ Pliki tymczasowe zawsze są sprzątane — zarówno przy sukcesie jak i przy bł
 
 Obrazki wstawione przez dialog „Wstaw obrazek" mogą pochodzić z:
 
-**a) adresu URL** — tag `<img src="https://...">` zostaje w edytorze; konwerter generuje `#figure(image("https://..."), caption: [opis])`. Typst pobiera ten obraz podczas kompilacji.
+**a) adresu URL** — tag `<img src="https://...">` zostaje w edytorze; konwerter generuje `#figure(image("https://..."), caption: [opis])`. typst-py pobiera ten obraz podczas kompilacji.
 
-**b) pliku lokalnego** — `FileReader.readAsDataURL()` konwertuje plik do ciągu base64 (`data:image/png;base64,...`). W DOM obraz otrzymuje unikalny atrybut `data-typst-id="img-<uuid>"`. Konwerter zamienia `src` na ten identyfikator w kodzie Typst. Słownik `images` przenosi mapowanie `id → dataURL` na serwer. Serwer:
-1. Dekoduje base64 → zapisuje do pliku tymczasowego `/tmp/img-{id}-N.png`
+**b) pliku lokalnego** — `FileReader.readAsDataURL()` konwertuje plik do ciągu base64 (`data:image/png;base64,...`). W DOM obraz otrzymuje unikalny atrybut `data-typst-id="img-<uuid>"`. Konwerter zamienia `src` na ten identyfikator w kodzie Typst. Słownik `images` przenosi mapowanie `id → dataURL` na serwer Django. Serwer:
+1. Dekoduje base64 → zapisuje do pliku tymczasowego `/tmp/img-{uid}-N.ext`
 2. Zastępuje placeholder (`img-<uuid>`) absolutną ścieżką do tego pliku w kodzie `.typ`
-3. Uruchamia `typst compile` — kompilator odczytuje obraz z dysku
-4. Usuwa plik tymczasowy
+3. Wywołuje `typst.compile(typ_path, root='/')` — `root='/'` powoduje, że absolutne ścieżki w kodzie Typst są rozwiązywane od korzenia systemu plików
+4. Usuwa wszystkie pliki tymczasowe w bloku `finally`
 
 ---
 
 ### Krok 8 — Ograniczanie liczby żądań (rate limiting)
 
-Endpoint `/export` uruchamia zewnętrzny proces (`typst compile`) i operacje na plikach. Żeby zapobiec nadmiernemu obciążeniu, `server.js` używa prostego ogranicznika in-memory:
+Endpoint `/export` wywołuje kompilator Typst, który jest operacją CPU-intensywną. Żeby zapobiec nadmiernemu obciążeniu, `editor/views.py` używa prostego ogranicznika in-memory z blokadą wątku:
 
 ```
-rateLimit(req, res, next)
-  ├─► klucz = adres IP żądania
-  ├─► jeśli nie ma rekordu lub okno czasowe wygasło → utwórz nowy rekord {count: 0, resetAt: teraz+60s}
-  ├─► count++
-  ├─► jeśli count > 15 → HTTP 429 + nagłówek Retry-After
-  └─► w przeciwnym razie → next()
-
-Co 60 sekund: usuń wygasłe rekordy z mapy (zapobieganie wyciekowi pamięci)
+_check_rate_limit(ip)
+  ├─► with threading.Lock():
+  │     ├─► usuń wygasłe wpisy ze słownika
+  │     ├─► jeśli nie ma rekordu lub okno wygasło → utwórz {count: 0, reset_at: teraz+60s}
+  │     ├─► count += 1
+  │     └─► jeśli count > 15 → zwróć (False, retry_after)
+  └─► zwróć (True, 0)
 ```
 
-Limit: **15 żądań na minutę na adres IP**.
+Limit: **15 żądań na minutę na adres IP**. Nagłówek `Retry-After` informuje klienta ile sekund poczekać.
 
 ---
 
-### Krok 9 — Tryb awaryjny (Typst niezainstalowany)
+### Krok 9 — Dostępność kompilatora
 
-Przed każdą kompilacją serwer sprawdza dostępność Typst:
+Biblioteka `typst-py` zawiera wbudowany kompilator Typst jako rozszerzenie C/Rust — jest dostępna od razu po `pip install typst`. Jeśli kompilacja się nie powiedzie (np. błąd składni Typst), serwer zwraca **HTTP 500** z opisem błędu:
 
-```js
-execFile('typst', ['--version'], { timeout: 5000 }, (err) => resolve(!err));
+```python
+try:
+    pdf_bytes = typst.compile(...)
+except Exception as exc:
+    return JsonResponse({'error': str(exc)}, status=500)
 ```
 
-Jeśli Typst nie jest zainstalowany:
-1. Serwer zwraca **HTTP 503** z treścią `{ error: "...", typstContent: "<kod .typ>" }`.
-2. Przeglądarka wyświetla toast ostrzegawczy i **automatycznie kopiuje kod Typst do schowka**.
-3. Użytkownik może wkleić kod na [typst.app/playground](https://typst.app/) lub zainstalować Typst lokalnie.
-
-Edytor jest w pełni funkcjonalny bez Typst — brakuje tylko generowania PDF.
+Przeglądarka wyświetla komunikat błędu w pasku stanu i toaście. Panel „Źródło Typst" po prawej stronie zawsze pokazuje aktualny kod — można go skopiować przyciskiem „Kopiuj" i wkleić na [typst.app/playground](https://typst.app/) w celu debugowania.
 
 ---
 
