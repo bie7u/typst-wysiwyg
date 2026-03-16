@@ -926,15 +926,42 @@
   document.getElementById('dlg-html-close').addEventListener('click', () => closeDialog('dialog-html'));
 
   // ── Keyboard shortcuts ────────────────────────────────────────────
+  // `ctrl` covers both Ctrl (Windows/Linux) and Cmd (macOS via metaKey),
+  // so all shortcuts work cross-platform.
   document.addEventListener('keydown', (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
     if (!ctrl) return;
     switch (e.key) {
+      // ── History ───────────────────────────────────────────────────
       case 'z': case 'Z':
-        if (e.shiftKey) { e.preventDefault(); exec('redo'); }
+        e.preventDefault();
+        if (e.shiftKey) { exec('redo'); } else { exec('undo'); }
         break;
       case 'y': case 'Y':
         e.preventDefault(); exec('redo'); break;
+
+      // ── Formatting ────────────────────────────────────────────────
+      case 'b': case 'B':
+        e.preventDefault(); exec('bold'); break;
+      case 'i': case 'I':
+        e.preventDefault(); exec('italic'); break;
+      case 'u': case 'U':
+        if (!e.shiftKey) { e.preventDefault(); exec('underline'); }
+        break;
+      case 'd': case 'D':
+        e.preventDefault(); exec('strikeThrough'); break;
+
+      // ── Superscript (Ctrl+Shift+=) / Subscript (Ctrl+=) ──────────
+      case '=':
+        e.preventDefault();
+        if (e.shiftKey) { exec('superscript'); } else { exec('subscript'); }
+        break;
+
+      // ── Link ──────────────────────────────────────────────────────
+      case 'k': case 'K':
+        e.preventDefault(); showLinkDialog(); break;
+
+      // ── Export ────────────────────────────────────────────────────
       case 's': case 'S':
         e.preventDefault(); exportToPDF(); break;
     }
