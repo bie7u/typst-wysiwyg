@@ -1,0 +1,11 @@
+node_modules/
+package-lock.json
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+staticfiles/
+*.egg-info/
