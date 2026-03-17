@@ -407,5 +407,51 @@ body {
 ::-webkit-scrollbar-thumb { background: #c8cdd6; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #a8b0c0; }
 
+/* ── Image Resize Toolbar ────────────────────────────────────────── */
+#img-toolbar {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #1e1e2e;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+  padding: 4px 8px;
+  z-index: 200;
+  box-shadow: var(--shadow-lg);
+}
+#img-toolbar.hidden { display: none !important; }
+#img-toolbar button {
+  padding: 2px 8px;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  background: #313244;
+  color: #cdd6f4;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: background .12s;
+}
+#img-toolbar button:hover { background: #45475a; }
+#img-size-display {
+  color: #cdd6f4;
+  min-width: 38px;
+  text-align: center;
+  font-size: 12px;
+  padding: 0 4px;
+}
+.img-toolbar-sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: #45475a;
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+.ql-editor img.img-selected {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
 /* ── Utility ─────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
