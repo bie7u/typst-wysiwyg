@@ -48,7 +48,7 @@ pip install -r requirements.txt
 DEBUG=True python manage.py runserver
 
 # 3. Otwórz w przeglądarce
-# http://localhost:8000
+# http://localhost:8263
 ```
 
 Port można zmienić podając go wprost:
@@ -95,7 +95,7 @@ typst-wysiwyg/
 
 ```
 python manage.py runserver
-  └─► Django nasłuchuje na porcie 8000
+  └─► Django nasłuchuje na porcie 8263
         ├─► GET  /          → serve_static() → public/index.html
         ├─► GET  /style.css → serve_static() → public/style.css
         ├─► GET  /editor.js → serve_static() → public/editor.js
@@ -111,7 +111,7 @@ python manage.py runserver
 
 ### Krok 2 — Przeglądarka otwiera edytor
 
-Po wejściu na `http://localhost:8000` przeglądarka pobiera `index.html`. Strona ładuje `style.css` i `editor.js`, a następnie:
+Po wejściu na `http://localhost:8263` przeglądarka pobiera `index.html`. Strona ładuje `style.css` i `editor.js`, a następnie:
 
 1. `editor.js` uruchamia się w trybie IIFE (`(function () { ... }())`), żeby nie zaśmiecać przestrzeni globalnej.
 2. Wywołuje `document.execCommand('styleWithCSS', false, true)` — sprawia to, że polecenia formatowania (`bold`, `italic` itd.) zapisują formatowanie jako styl CSS (`style="font-weight:bold"`) zamiast starych tagów `<b>`, co ułatwia późniejszą konwersję.
