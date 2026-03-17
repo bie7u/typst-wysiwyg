@@ -87,10 +87,20 @@
         const sz = this.cssSizeToTypst(s.fontSize);
         if (sz) result = `#text(size: ${sz})[${result}]`;
       }
-      // font-family
+      // font-family: inline style takes priority; fall back to Quill's ql-font-* class
       if (s.fontFamily) {
         const f = s.fontFamily.replace(/['"]/g, '').split(',')[0].trim();
         if (f) result = `#text(font: "${f}")[${result}]`;
+      } else {
+        const fontClass = (node.className || '').match(/ql-font-(\S+)/);
+        if (fontClass) {
+          const fontMap = {
+            'serif':     'New Computer Modern',
+            'monospace': 'DejaVu Sans Mono',
+          };
+          const fontName = fontMap[fontClass[1]];
+          if (fontName) result = `#text(font: "${fontName}")[${result}]`;
+        }
       }
       // background (highlight)
       if (s.backgroundColor) {
@@ -310,6 +320,8 @@
         '#set page(paper: "a4", margin: (x: 2.5cm, y: 2cm))',
         '#set text(size: 11pt, lang: "pl")',
         '#set par(justify: false, leading: 0.65em)',
+        '#set enum(numbering: "1.a.i.")',
+        '#set list(marker: ("•", "◦", "▪"))',
         '#show heading: set text(fill: rgb("#1a1a2e"))',
         '#show link: underline',
         '',
