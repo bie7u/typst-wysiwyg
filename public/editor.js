@@ -128,6 +128,25 @@
       return result;
     },
 
+    /* Apply inline color / background-color styles found directly on a
+       semantic tag (e.g. <strong style="color:red">) to its already-
+       converted Typst content.  Quill puts these styles on the tag itself
+       rather than on a child <span>, so spanToTypst never sees them. */
+    applyNodeStyles(node, content) {
+      let result = content;
+      const s = node.style;
+      if (!s) return result;
+      if (s.backgroundColor) {
+        const c = this.cssColorToTypst(s.backgroundColor);
+        if (c) result = `#highlight(fill: ${c})[${result}]`;
+      }
+      if (s.color) {
+        const c = this.cssColorToTypst(s.color);
+        if (c) result = `#text(fill: ${c})[${result}]`;
+      }
+      return result;
+    },
+
     /* Convert a list node (ul / ol) */
     listToTypst(node, ordered) {
       const items = Array.from(node.children).filter(el => el.tagName === 'LI');
@@ -236,16 +255,16 @@
         case 'table': return this.tableToTypst(node);
 
         case 'strong':
-        case 'b': return `#strong[${children()}]`;
+        case 'b': return `#strong[${this.applyNodeStyles(node, children())}]`;
 
         case 'em':
-        case 'i': return `#emph[${children()}]`;
+        case 'i': return `#emph[${this.applyNodeStyles(node, children())}]`;
 
-        case 'u': return `#underline[${children()}]`;
+        case 'u': return `#underline[${this.applyNodeStyles(node, children())}]`;
 
         case 's':
         case 'del':
-        case 'strike': return `#strike[${children()}]`;
+        case 'strike': return `#strike[${this.applyNodeStyles(node, children())}]`;
 
         case 'sup': return `#super[${children()}]`;
         case 'sub': return `#sub[${children()}]`;
