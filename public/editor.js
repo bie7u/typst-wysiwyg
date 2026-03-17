@@ -257,7 +257,11 @@
           const src = node.getAttribute('src') || '';
           const alt = node.getAttribute('alt') || '';
           if (src.startsWith('data:')) {
-            const id = node.dataset.typstId || 'embedded-image';
+            let id = node.dataset.typstId;
+            if (!id) {
+              id = 'img-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+              node.dataset.typstId = id;
+            }
             return `\n#figure(\n  image("${id}"),\n  caption: [${this.escapeText(alt)}]\n)\n\n`;
           }
           return `\n#figure(\n  image("${src}"),\n  caption: [${this.escapeText(alt)}]\n)\n\n`;
