@@ -14,7 +14,10 @@ SECRET_KEY = os.environ.get(
     'django-insecure-typst-wysiwyg-change-in-production',
 )
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# `*` allows any Host header, which is required for self-hosted VPS deployments
+# where the server hostname is not known at config time.  If you want to restrict
+# access, set ALLOWED_HOSTS to a comma-separated list (e.g. example.com,192.0.2.1).
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 # ---------------------------------------------------------------------------
 # Application
