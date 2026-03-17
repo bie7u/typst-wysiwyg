@@ -61,7 +61,8 @@
         if (m && ['center', 'right', 'justify'].includes(m[1])) align = m[1];
       }
       if (!align || align === 'left' || align === 'start') return content;
-      // 'justify' is not an alignment value in Typst; use #par(justify: true) instead
+      // Typst has no 'justify' alignment value; #align(justify) is a compile error.
+      // Justified text must use #par(justify: true) instead.
       if (align === 'justify') return `#par(justify: true)[\n${content.trim()}\n]`;
       return `#align(${align})[\n${content.trim()}\n]`;
     },
@@ -103,11 +104,11 @@
       }
       // bold
       if (s.fontWeight === 'bold' || parseInt(s.fontWeight) >= 700) {
-        result = `*${result}*`;
+        result = `#strong[${result}]`;
       }
       // italic
       if (s.fontStyle === 'italic') {
-        result = `_${result}_`;
+        result = `#emph[${result}]`;
       }
       // underline / strikethrough
       const td = s.textDecoration || s.textDecorationLine || '';
@@ -222,10 +223,10 @@
         case 'table': return this.tableToTypst(node);
 
         case 'strong':
-        case 'b': return `*${children()}*`;
+        case 'b': return `#strong[${children()}]`;
 
         case 'em':
-        case 'i': return `_${children()}_`;
+        case 'i': return `#emph[${children()}]`;
 
         case 'u': return `#underline[${children()}]`;
 
