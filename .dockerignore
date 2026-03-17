@@ -1,0 +1,9 @@
+.git
+.env
+node_modules/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+staticfiles/
+*.pdf
