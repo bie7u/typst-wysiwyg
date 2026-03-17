@@ -15,7 +15,6 @@
   --c-success:   #2f9e44;
   --c-warn:      #f59f00;
 
-  --tb-h:        42px;
   --header-h:    52px;
   --status-h:    28px;
   --radius:      6px;
@@ -62,114 +61,24 @@ body {
 .brand-name { font-size: 16px; font-weight: 600; letter-spacing: .3px; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
 
-/* ── Toolbar ─────────────────────────────────────────────────────── */
-#toolbar {
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
-  flex-shrink: 0;
-  user-select: none;
-}
-.tb-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 2px;
-  padding: 4px 8px;
-  min-height: var(--tb-h);
-}
-.tb-row + .tb-row { border-top: 1px solid var(--c-border); }
-
-.tb-group { display: flex; align-items: center; gap: 1px; }
-.tb-sep {
-  width: 1px;
-  height: 24px;
-  background: var(--c-border);
-  margin: 0 4px;
-}
-
-/* Toolbar button */
-.tb-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius);
-  cursor: pointer;
-  color: var(--c-text);
+/* Format selector in header */
+.format-label {
+  color: rgba(255,255,255,.85);
   font-size: 13px;
-  transition: background .12s, color .12s;
-  padding: 0;
-  line-height: 1;
 }
-.tb-btn svg { fill: currentColor; flex-shrink: 0; }
-.tb-btn:hover  { background: #e8ecff; color: var(--c-accent); }
-.tb-btn:active { background: #ccd4ff; }
-.tb-btn.active { background: #dde4ff; color: var(--c-accent); font-weight: 700; }
-
-.tb-h { font-size: 12px; font-weight: 700; width: 28px; }
-
-.fmt-bold   { font-weight: 700; }
-.fmt-italic { font-style: italic; }
-.fmt-ul     { text-decoration: underline; }
-.fmt-strike { text-decoration: line-through; }
-
-/* Toolbar selects */
-.tb-row select {
-  height: 28px;
-  border: 1px solid var(--c-border);
+.format-select {
+  height: 30px;
+  border: 1.5px solid rgba(255,255,255,.5);
   border-radius: var(--radius);
-  padding: 0 6px;
-  font-size: 12px;
-  color: var(--c-text);
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-accent);
   background: #fff;
   cursor: pointer;
   outline: none;
-  max-width: 130px;
 }
-.tb-row select:hover { border-color: var(--c-accent); }
-#font-family { max-width: 130px; }
-#font-size   { max-width: 90px; }
-#line-height { max-width: 115px; }
-
-/* Color pickers */
-.color-picker-wrap {
-  position: relative;
-  width: 30px !important;
-  height: 30px !important;
-  cursor: pointer;
-  overflow: visible;
-  flex-direction: column;
-  gap: 0;
-}
-.color-icon {
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
-  display: block;
-  margin-top: 2px;
-}
-.color-bar {
-  display: block;
-  height: 3px;
-  border-radius: 2px;
-  margin-top: 1px;
-  width: 18px;
-}
-#text-color-bar { background: #000; }
-#bg-color-bar   { background: #ffff00; }
-
-input[type="color"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-/* make label itself clickable trigger */
-.color-picker-wrap:hover { background: #e8ecff; color: var(--c-accent); }
+.format-select:hover { border-color: #fff; }
 
 /* ── Main Area ──────────────────────────────────────────────────── */
 #main {
@@ -181,27 +90,47 @@ input[type="color"] {
 /* ── Editor Pane ────────────────────────────────────────────────── */
 #editor-pane {
   flex: 1 1 55%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--c-surface);
-  padding: 24px 28px;
 }
 
-#editor {
+/* Quill toolbar overrides */
+.ql-toolbar.ql-snow {
+  flex-shrink: 0;
+  border: none;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+  padding: 6px 8px;
+  flex-wrap: wrap;
+}
+
+/* Quill container overrides */
+#editor.ql-container.ql-snow {
+  flex: 1;
+  overflow-y: auto;
+  border: none;
+  font-size: 15px;
+  font-family: var(--font-ui);
+}
+
+/* Quill editable area */
+.ql-editor {
   max-width: 720px;
   margin: 0 auto;
-  min-height: calc(100vh - var(--header-h) - 2*var(--tb-h) - var(--status-h) - 48px);
-  outline: none;
+  min-height: 100%;
+  padding: 24px 28px;
   font-size: 15px;
   line-height: 1.7;
-  color: #1a1a2e;
+  color: var(--c-text);
 }
 
-/* Editor content styling */
-#editor h1 { font-size: 2em;   margin: .67em 0; color: #1a1a2e; }
-#editor h2 { font-size: 1.5em; margin: .83em 0; color: #1a1a2e; }
-#editor h3 { font-size: 1.17em;margin: 1em 0;   color: #1a1a2e; }
-#editor p  { margin: .5em 0; }
-#editor blockquote {
+.ql-editor h1 { font-size: 2em;    margin: .67em 0; color: #1a1a2e; }
+.ql-editor h2 { font-size: 1.5em;  margin: .83em 0; color: #1a1a2e; }
+.ql-editor h3 { font-size: 1.17em; margin: 1em 0;   color: #1a1a2e; }
+.ql-editor p  { margin: .5em 0; }
+.ql-editor blockquote {
   border-left: 4px solid var(--c-accent);
   margin: 1em 0;
   padding: .5em 1em;
@@ -209,7 +138,7 @@ input[type="color"] {
   border-radius: 0 var(--radius) var(--radius) 0;
   color: #374151;
 }
-#editor pre {
+.ql-editor pre.ql-syntax {
   background: #1e1e2e;
   color: #cdd6f4;
   border-radius: var(--radius);
@@ -219,7 +148,7 @@ input[type="color"] {
   font-size: 13px;
   margin: 1em 0;
 }
-#editor code {
+.ql-editor code {
   font-family: var(--font-mono);
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
@@ -228,45 +157,10 @@ input[type="color"] {
   font-size: 87%;
   color: #e03131;
 }
-#editor pre code {
-  background: transparent;
-  border: none;
-  padding: 0;
-  color: inherit;
-  font-size: inherit;
-}
-#editor ul, #editor ol { padding-left: 1.5em; margin: .5em 0; }
-#editor li { margin: .15em 0; }
-#editor a  { color: var(--c-accent); text-decoration: underline; }
-#editor img { max-width: 100%; border-radius: var(--radius); display: block; margin: .5em 0; }
-#editor table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1em 0;
-  font-size: 14px;
-}
-#editor th, #editor td {
-  border: 1px solid var(--c-border);
-  padding: 6px 10px;
-  text-align: left;
-}
-#editor th { background: #f0f4ff; font-weight: 600; }
-#editor tr:nth-child(even) td { background: #fafafa; }
-
-/* Task list */
-#editor .task-list { list-style: none; padding-left: .5em; }
-#editor .task-item { display: flex; align-items: flex-start; gap: 6px; margin: .3em 0; }
-#editor .task-checkbox {
-  cursor: pointer;
-  font-size: 16px;
-  flex-shrink: 0;
-  user-select: none;
-  margin-top: 1px;
-}
-#editor .task-item.done .task-text {
-  text-decoration: line-through;
-  color: var(--c-muted);
-}
+.ql-editor ul, .ql-editor ol { padding-left: 1.5em; margin: .5em 0; }
+.ql-editor li { margin: .15em 0; }
+.ql-editor a  { color: var(--c-accent); text-decoration: underline; }
+.ql-editor img { max-width: 100%; border-radius: var(--radius); display: block; margin: .5em 0; }
 
 /* ── Divider ────────────────────────────────────────────────────── */
 #panel-divider {
@@ -302,7 +196,7 @@ input[type="color"] {
   border-bottom: 1px solid #313244;
   flex-shrink: 0;
 }
-#btn-copy-typst {
+#btn-copy-output {
   font-size: 11px;
   padding: 3px 9px;
   border: 1px solid #45475a;
@@ -312,7 +206,7 @@ input[type="color"] {
   cursor: pointer;
   transition: background .12s;
 }
-#btn-copy-typst:hover { background: #45475a; }
+#btn-copy-output:hover { background: #45475a; }
 
 #typst-source {
   flex: 1;
@@ -483,40 +377,6 @@ input[type="color"] {
   font-size: 12px;
   margin: -4px 0;
 }
-
-/* ── Emoji Picker ────────────────────────────────────────────────── */
-#emoji-picker {
-  position: absolute;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-  padding: 10px;
-  z-index: 200;
-  width: 300px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-#emoji-picker.hidden { display: none; }
-#emoji-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-.emoji-btn {
-  font-size: 20px;
-  cursor: pointer;
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  transition: background .12s;
-}
-.emoji-btn:hover { background: #e8ecff; }
 
 /* ── Toast ───────────────────────────────────────────────────────── */
 #toast {
