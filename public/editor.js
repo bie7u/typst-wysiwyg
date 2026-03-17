@@ -255,16 +255,17 @@
 
         case 'img': {
           const src = node.getAttribute('src') || '';
-          const alt = node.getAttribute('alt') || '';
+          const width = node.dataset.width;
+          const widthArg = width ? `, width: ${width}` : '';
           if (src.startsWith('data:')) {
             let id = node.dataset.typstId;
             if (!id) {
               id = 'img-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
               node.dataset.typstId = id;
             }
-            return `\n#figure(\n  image("${id}"),\n  caption: [${this.escapeText(alt)}]\n)\n\n`;
+            return `\n#image("${id}"${widthArg})\n\n`;
           }
-          return `\n#figure(\n  image("${src}"),\n  caption: [${this.escapeText(alt)}]\n)\n\n`;
+          return `\n#image("${src}"${widthArg})\n\n`;
         }
 
         case 'span': return this.spanToTypst(node, children());
@@ -347,6 +348,104 @@
     '<p>Po zakończeniu kliknij <em>Eksportuj PDF</em> — dokument zostanie skompilowany przez ' +
     '<strong>Typst</strong> i pobrany.</p>'
   );
+
+  /* ─────────────────────────────────────────────────────────────────
+     IMAGE FILE UPLOAD HANDLER
+     Replace Quill's default URL prompt with a file picker.
+     ───────────────────────────────────────────────────────────────── */
+  quill.getModule('toolbar').addHandler('image', () => {
+    const input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = 'image/*';
+    input.click();
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        const range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'image', reader.result, 'user');
+      });
+      reader.readAsDataURL(file);
+    });
+  });
+
+  /* ─────────────────────────────────────────────────────────────────
+     IMAGE RESIZE TOOLBAR
+     Click an image to reveal a floating toolbar for resizing.
+     ───────────────────────────────────────────────────────────────── */
+  const MIN_IMG_WIDTH = 10;   // percent
+  const MAX_IMG_WIDTH = 100;  // percent
+
+  const imgToolbar = document.createElement('div');
+  imgToolbar.id        = 'img-toolbar';
+  imgToolbar.className = 'hidden';
+  imgToolbar.innerHTML =
+    '<button data-action="smaller" title="Zmniejsz (−10%)">−</button>' +
+    '<span id="img-size-display">100%</span>' +
+    '<button data-action="larger"  title="Zwiększ (+10%)">+</button>' +
+    '<span class="img-toolbar-sep"></span>' +
+    '<button data-size="25">25%</button>' +
+    '<button data-size="50">50%</button>' +
+    '<button data-size="75">75%</button>' +
+    '<button data-size="100">100%</button>';
+  document.body.appendChild(imgToolbar);
+
+  let activeImg = null;
+
+  function applyImgWidth(img, pct) {
+    img.dataset.width = pct + '%';
+    img.style.width   = pct + '%';
+    document.getElementById('img-size-display').textContent = pct + '%';
+    syncAll();
+  }
+
+  function positionImgToolbar(img) {
+    const rect = img.getBoundingClientRect();
+    const left = Math.min(rect.left, window.innerWidth - 290);
+    imgToolbar.style.top  = (rect.bottom + 6) + 'px';
+    imgToolbar.style.left = Math.max(4, left) + 'px';
+  }
+
+  quill.root.addEventListener('click', e => {
+    if (e.target.tagName === 'IMG') {
+      if (activeImg) activeImg.classList.remove('img-selected');
+      activeImg = e.target;
+      activeImg.classList.add('img-selected');
+      const pct = parseInt(activeImg.dataset.width) || 100;
+      document.getElementById('img-size-display').textContent = pct + '%';
+      imgToolbar.classList.remove('hidden');
+      positionImgToolbar(activeImg);
+    } else if (!imgToolbar.contains(e.target)) {
+      if (activeImg) activeImg.classList.remove('img-selected');
+      activeImg = null;
+      imgToolbar.classList.add('hidden');
+    }
+  });
+
+  imgToolbar.addEventListener('click', e => {
+    if (!activeImg) return;
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const size   = btn.dataset.size;
+    if (action === 'smaller') {
+      applyImgWidth(activeImg, Math.max(MIN_IMG_WIDTH, (parseInt(activeImg.dataset.width) || 100) - 10));
+    } else if (action === 'larger') {
+      applyImgWidth(activeImg, Math.min(MAX_IMG_WIDTH, (parseInt(activeImg.dataset.width) || 100) + 10));
+    } else if (size) {
+      applyImgWidth(activeImg, parseInt(size));
+    }
+    positionImgToolbar(activeImg);
+  });
+
+  document.getElementById('editor-pane').addEventListener('scroll', () => {
+    if (activeImg) positionImgToolbar(activeImg);
+  }, true);
+
+  window.addEventListener('resize', () => {
+    if (activeImg) positionImgToolbar(activeImg);
+  });
 
   /* ─────────────────────────────────────────────────────────────────
      UI ELEMENTS
