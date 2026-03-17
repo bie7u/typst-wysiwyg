@@ -87,10 +87,20 @@
         const sz = this.cssSizeToTypst(s.fontSize);
         if (sz) result = `#text(size: ${sz})[${result}]`;
       }
-      // font-family
+      // font-family: inline style takes priority; fall back to Quill's ql-font-* class
       if (s.fontFamily) {
         const f = s.fontFamily.replace(/['"]/g, '').split(',')[0].trim();
         if (f) result = `#text(font: "${f}")[${result}]`;
+      } else {
+        const fontClass = (node.className || '').match(/ql-font-(\S+)/);
+        if (fontClass) {
+          const fontMap = {
+            'serif':     'New Computer Modern',
+            'monospace': 'DejaVu Sans Mono',
+          };
+          const fontName = fontMap[fontClass[1]];
+          if (fontName) result = `#text(font: "${fontName}")[${result}]`;
+        }
       }
       // background (highlight)
       if (s.backgroundColor) {
@@ -118,13 +128,35 @@
       return result;
     },
 
+    /* Apply inline color / background-color styles found directly on a
+       semantic tag (e.g. <strong style="color:red">) to its already-
+       converted Typst content.  Quill puts these styles on the tag itself
+       rather than on a child <span>, so spanToTypst never sees them. */
+    applyNodeStyles(node, content) {
+      let result = content;
+      const s = node.style;
+      if (!s) return result;
+      if (s.backgroundColor) {
+        const c = this.cssColorToTypst(s.backgroundColor);
+        if (c) result = `#highlight(fill: ${c})[${result}]`;
+      }
+      if (s.color) {
+        const c = this.cssColorToTypst(s.color);
+        if (c) result = `#text(fill: ${c})[${result}]`;
+      }
+      return result;
+    },
+
     /* Convert a list node (ul / ol) */
     listToTypst(node, ordered) {
       const items = Array.from(node.children).filter(el => el.tagName === 'LI');
       const lines = items.map(li => {
+        const indentMatch = (li.className || '').match(/ql-indent-(\d+)/);
+        const level = indentMatch ? parseInt(indentMatch[1], 10) : 0;
+        const indent = '  '.repeat(level);
         const content = Array.from(li.childNodes)
           .map(c => this.nodeToTypst(c)).join('').trim();
-        return `${ordered ? '+' : '-'} ${content}`;
+        return `${indent}${ordered ? '+' : '-'} ${content}`;
       });
       return '\n' + lines.join('\n') + '\n\n';
     },
@@ -223,16 +255,16 @@
         case 'table': return this.tableToTypst(node);
 
         case 'strong':
-        case 'b': return `#strong[${children()}]`;
+        case 'b': return `#strong[${this.applyNodeStyles(node, children())}]`;
 
         case 'em':
-        case 'i': return `#emph[${children()}]`;
+        case 'i': return `#emph[${this.applyNodeStyles(node, children())}]`;
 
-        case 'u': return `#underline[${children()}]`;
+        case 'u': return `#underline[${this.applyNodeStyles(node, children())}]`;
 
         case 's':
         case 'del':
-        case 'strike': return `#strike[${children()}]`;
+        case 'strike': return `#strike[${this.applyNodeStyles(node, children())}]`;
 
         case 'sup': return `#super[${children()}]`;
         case 'sub': return `#sub[${children()}]`;
@@ -307,6 +339,8 @@
         '#set page(paper: "a4", margin: (x: 2.5cm, y: 2cm))',
         '#set text(size: 11pt, lang: "pl")',
         '#set par(justify: false, leading: 0.65em)',
+        '#set enum(numbering: "1.a.i.")',
+        '#set list(marker: ("•", "◦", "▪"))',
         '#show heading: set text(fill: rgb("#1a1a2e"))',
         '#show link: underline',
         '',
