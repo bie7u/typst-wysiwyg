@@ -122,9 +122,12 @@
     listToTypst(node, ordered) {
       const items = Array.from(node.children).filter(el => el.tagName === 'LI');
       const lines = items.map(li => {
+        const indentMatch = (li.className || '').match(/ql-indent-(\d+)/);
+        const level = indentMatch ? parseInt(indentMatch[1], 10) : 0;
+        const indent = '  '.repeat(level);
         const content = Array.from(li.childNodes)
           .map(c => this.nodeToTypst(c)).join('').trim();
-        return `${ordered ? '+' : '-'} ${content}`;
+        return `${indent}${ordered ? '+' : '-'} ${content}`;
       });
       return '\n' + lines.join('\n') + '\n\n';
     },
