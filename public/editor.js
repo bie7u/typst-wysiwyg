@@ -61,7 +61,9 @@
         if (m && ['center', 'right', 'justify'].includes(m[1])) align = m[1];
       }
       if (!align || align === 'left' || align === 'start') return content;
-      return `#align(${align === 'justify' ? 'justify' : align})[\n${content.trim()}\n]`;
+      // 'justify' is not an alignment value in Typst; use #par(justify: true) instead
+      if (align === 'justify') return `#par(justify: true)[\n${content.trim()}\n]`;
+      return `#align(${align})[\n${content.trim()}\n]`;
     },
 
     /* Wrap content with left-padding if needed */
